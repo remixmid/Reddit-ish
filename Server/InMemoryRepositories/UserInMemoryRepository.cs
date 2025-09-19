@@ -69,6 +69,21 @@ public class UserInMemoryRepository : IUserRepository
             $"User with id {id} was not found"
         );
     }
+    
+    public Task<User> GetSingleAsync(string username)
+    {
+        foreach (var item in _users)
+        {
+            if (item.Username == username)
+            {
+                return Task.FromResult(item);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"User with id {username} was not found"
+        );
+    }
 
     public IQueryable<User> GetManyAsync()
     {
