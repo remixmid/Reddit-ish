@@ -38,6 +38,11 @@ public class UserInMemoryRepository : IUserRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateAsync(int id, User user)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task DeleteAsync(int id)
     {
         User? existingUser = users.SingleOrDefault(x => x.Id == id);

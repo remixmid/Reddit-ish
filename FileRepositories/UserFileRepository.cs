@@ -27,7 +27,7 @@ public class UserFileRepository : IUserRepository
         await File.WriteAllTextAsync(_filePath, userAsJson);
         return user;
     }
-
+    
     public async Task UpdateAsync(User user)
     {
         string userAsJson = await File.ReadAllTextAsync(_filePath);

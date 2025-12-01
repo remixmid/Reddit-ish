@@ -26,7 +26,7 @@ public class SinglePostView
         foreach (var c in _commentRepo.GetManyAsync(id).Where(c => c.PostId == id))
         {
             var user = await _userRepo.GetSingleAsync(c.UserId);
-            Console.WriteLine($"{user.Username}: {c.Body}");
+            Console.WriteLine($"{user.UserName}: {c.Body}");
         }
         
         Console.WriteLine("\n7 - Write comment");

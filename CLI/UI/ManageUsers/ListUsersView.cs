@@ -15,6 +15,6 @@ public class ListUsersView
     {
         var users = userRepo.GetManyAsync();
         foreach (var u in users)
-            Console.WriteLine($"{u.Id}: {u.Username}");
+            Console.WriteLine($"{u.Id}: {u.UserName}");
     }
 }
