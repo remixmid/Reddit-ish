@@ -7,6 +7,10 @@ public class Comment
     public int PostId { get; set; }
     public string Body { get; set; }
 
+    public Comment()
+    {
+    }
+
     public Comment(int userId, string body, int postId)
     {
         PostId = postId;

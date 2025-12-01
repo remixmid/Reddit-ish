@@ -28,13 +28,21 @@ public class SinglePostView
             var user = await _userRepo.GetSingleAsync(c.UserId);
             Console.WriteLine($"{user.Username}: {c.Body}");
         }
-
-        Console.WriteLine("\n8 - Update post");
+        
+        Console.WriteLine("\n7 - Write comment");
+        Console.WriteLine("8 - Update post");
         Console.WriteLine("9 - Delete post");
         Console.WriteLine("0 - Back");
 
         switch (Console.ReadLine())
         {
+            case "7":
+                Console.WriteLine("Enter your id");
+                int userId = int.Parse(Console.ReadLine());
+                Console.WriteLine("Enter your comment");
+                string comment = Console.ReadLine();
+                _commentRepo.AddAsync(new Comment(userId, comment, id));
+                break;
             case "8":
                 Console.WriteLine("Enter new body:");
                 string newBody = Console.ReadLine();
