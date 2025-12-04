@@ -5,7 +5,6 @@ namespace BlazorApp.Auth;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.JSInterop;
 using LoginRequest = ApiContracts.Requests.LoginRequest;
 
@@ -77,7 +76,6 @@ public class SimpleAuthProvider : AuthenticationStateProvider
         {
             new Claim(ClaimTypes.Name, userDto.UserName),
             new Claim(ClaimTypes.NameIdentifier, userDto.Id.ToString())
-            // add other claims as needed
         };
 
         ClaimsIdentity identity = new ClaimsIdentity(claims, "apiauth");

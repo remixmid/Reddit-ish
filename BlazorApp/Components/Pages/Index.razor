@@ -1,7 +1,18 @@
 ﻿@page "/"
+@inject NavigationManager NavMgr
+<PageTitle>Home</PageTitle>
 
-<h1>Hello from Blazor client</h1>
+<h1>Reddit Clone</h1>
 
-<p>
-    Это стартовая страница. Потом сюда добавим список постов.
-</p>
+<AuthorizeView>
+    <Authorized>
+        <h3>Hello, @context.User.Identity?.Name</h3>
+    </Authorized>
+    <NotAuthorized>
+        You are not logged in!
+    </NotAuthorized>
+</AuthorizeView>
+
+<p>Here you can browse interesting posts.</p>
+
+<button @onclick='() => NavMgr.NavigateTo("login")'>go to login</button>

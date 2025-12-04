@@ -72,4 +72,9 @@ public class UserInMemoryRepository : IUserRepository
     {
         return users.AsQueryable();
     }
+
+    public Task<User?> GetByUserNameAsync(string userName)
+    {
+        throw new NotImplementedException();
+    }
 }

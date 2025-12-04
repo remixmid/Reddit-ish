@@ -1,6 +1,7 @@
 ﻿using ApiContracts;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebAPI.Controllers;
@@ -20,15 +21,18 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserDto>> AddUser([FromBody] CreateUserDto request)
     {
         await VerifyUserNameIsAvailableAsync(request.UserName);
+
         User user = new(request.UserName, request.Password);
         User created = await userRepository.AddAsync(user);
+
         UserDto dto = new()
         {
             Id = created.Id,
             UserName = created.UserName
         };
-        return Created($"/users/{dto.Id}", created);
+        return Created($"/users/{dto.Id}", dto);
     }
+
 
     [HttpPatch("{id:int}")]
     public async Task<ActionResult<UpdateUserDto>> UpdateUser([FromRoute] int id, [FromBody] UpdateUserDto request)
@@ -86,22 +90,21 @@ public class UsersController : ControllerBase
 
     private async Task VerifyUserNameIsAvailableAsync(string userName)
     {
-        List<User> users = userRepository.GetManyAsync().ToList();
+        bool exists = await userRepository
+            .GetManyAsync()
+            .AnyAsync(u => u.UserName == userName);
 
-        foreach (User user in users)
-        {
-            if (user.UserName.Equals(userName))
-                throw new Exception("Username already exists");
-        }
+        if (exists)
+            throw new Exception("Username already exists");
     }
 
     private async Task EnsureUserNameUniqueAsync(string userName)
     {
-        List<User> users = userRepository.GetManyAsync().ToList();
-        foreach (User user in users)
-        {
-            if (user.UserName.Equals(userName))
-                throw new Exception("Username already taken");
-        }
+        bool exists = await userRepository
+            .GetManyAsync()
+            .AnyAsync(u => u.UserName == userName);
+
+        if (exists)
+            throw new Exception("Username already taken");
     }
 }

@@ -17,7 +17,6 @@ public class UserFileRepository : IUserRepository
     {
         if (!File.Exists(_filePath))
         {
-            // создаём пустой список юзеров
             File.WriteAllText(_filePath, "[]");
         }
     }
@@ -87,9 +86,19 @@ public class UserFileRepository : IUserRepository
 
     public IQueryable<User> GetManyAsync()
     {
-        // синхронное чтение здесь норм
         string json = File.ReadAllText(_filePath);
         var users = JsonSerializer.Deserialize<List<User>>(json, _jsonOptions) ?? new List<User>();
         return users.AsQueryable();
     }
+    
+    public async Task<User?> GetByUserNameAsync(string userName)
+    {
+        var users = await ReadAllAsync();
+
+        var user = users.SingleOrDefault(u =>
+            u.UserName.Equals(userName, StringComparison.OrdinalIgnoreCase));
+
+        return user;
+    }
+
 }

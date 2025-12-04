@@ -16,7 +16,6 @@ public class CommentsController : ControllerBase
         this.commentRepo = commentRepo;
     }
 
-    // GET /Comments/post/2  -> все комментарии к посту 2
     [HttpGet("post/{postId:int}")]
     public ActionResult<IEnumerable<CommentDto>> GetByPost(int postId)
     {
@@ -35,7 +34,6 @@ public class CommentsController : ControllerBase
         return Ok(comments);
     }
 
-    // создание комментария, если уже есть:
     [HttpPost]
     public async Task<ActionResult<CommentDto>> Create([FromBody] CommentCreateDto request)
     {

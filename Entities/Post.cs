@@ -3,10 +3,13 @@
 public class Post
 {
     public int Id { get; set; }
-    public string Title { get; set; }
-    public string Body { get; set; }
-    public int UserId { get; set; }
+    public string Title { get; set; } = null!;
+    public string Body { get; set; } = null!;
 
+    public int UserId { get; set; }  
+    public User User { get; set; } = null!;
+
+    public ICollection<Comment> Comments { get; private set; } = new List<Comment>();
     public Post()
     {
     }

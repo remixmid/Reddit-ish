@@ -17,7 +17,6 @@ public class PostFileRepository : IPostRepository
     {
         if (!File.Exists(_filePath))
         {
-            // пустой список постов
             File.WriteAllText(_filePath, "[]");
         }
     }
@@ -87,8 +86,6 @@ public class PostFileRepository : IPostRepository
 
     public IQueryable<Post> GetManyAsync()
     {
-        // здесь можешь сделать async-версию, но раз интерфейс возвращает IQueryable —
-        // читаем синхронно (быстро) и возвращаем список
         string json = File.ReadAllText(_filePath);
         var posts = JsonSerializer.Deserialize<List<Post>>(json, _jsonOptions) ?? new List<Post>();
         return posts.AsQueryable();

@@ -1,6 +1,7 @@
 ﻿using ApiContracts;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebAPI.Controllers;
@@ -22,25 +23,15 @@ public class PostsController : ControllerBase
     }
 
     [HttpPost]
-    [HttpPost]
     public async Task<ActionResult<PostDto>> Create([FromBody] PostCreateDto request)
     {
-        // 1) Проверяем, что юзер существует
-        try
-        {
-            await userRepository.GetSingleAsync(request.UserId);
-        }
-        catch (InvalidOperationException e)
-        {
-            // репо кинул "User with id X was not found"
-            return NotFound(e.Message);
-        }
+        var user = await userRepository.GetSingleAsync(request.UserId);
+        if (user == null)
+            return NotFound($"User with id {request.UserId} was not found.");
 
-        // 2) Создаём пост
         Post post = new(request.Title, request.Body, request.UserId);
         Post created = await postRepository.AddAsync(post);
 
-        // 3) Маппим в DTO
         PostDto dto = new()
         {
             Id = created.Id,
@@ -74,7 +65,7 @@ public class PostsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PostDto>>> GetMany()
     {
-        var posts = postRepository.GetManyAsync();
+        var posts = await postRepository.GetManyAsync().ToListAsync();
 
         var dtos = posts.Select(p => new PostDto
         {
