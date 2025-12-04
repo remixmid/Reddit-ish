@@ -1,0 +1,61 @@
+﻿@page "/users/add"
+
+@inject IUserService UserService
+@inject NavigationManager Nav
+
+<h1>Create User</h1>
+
+<EditForm Model="@model" OnValidSubmit="OnSubmitAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Username</label>
+        <InputText class="form-control" @bind-Value="model.UserName" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText class="form-control" type="password" @bind-Value="model.Password" />
+    </div>
+
+    <button class="btn btn-primary" type="submit" disabled="@isSubmitting">
+        @(isSubmitting ? "Creating..." : "Create user")
+    </button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3">@errorMessage</div>
+}
+
+@code {
+    private CreateUserDto model = new()
+    {
+        UserName = null,
+        Password = null
+    };
+    private bool isSubmitting;
+    private string? errorMessage;
+
+    private async Task OnSubmitAsync()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var created = await UserService.CreateAsync(model);
+            // после создания юзера идем к постам
+            Nav.NavigateTo("/posts");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

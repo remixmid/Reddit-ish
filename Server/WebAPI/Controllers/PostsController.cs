@@ -22,16 +22,25 @@ public class PostsController : ControllerBase
     }
 
     [HttpPost]
+    [HttpPost]
     public async Task<ActionResult<PostDto>> Create([FromBody] PostCreateDto request)
     {
-        // Validate user exists
-        var user = await userRepository.GetSingleAsync(request.UserId);
-        if (user == null)
-            return NotFound($"User with id {request.UserId} not found.");
+        // 1) Проверяем, что юзер существует
+        try
+        {
+            await userRepository.GetSingleAsync(request.UserId);
+        }
+        catch (InvalidOperationException e)
+        {
+            // репо кинул "User with id X was not found"
+            return NotFound(e.Message);
+        }
 
+        // 2) Создаём пост
         Post post = new(request.Title, request.Body, request.UserId);
         Post created = await postRepository.AddAsync(post);
 
+        // 3) Маппим в DTO
         PostDto dto = new()
         {
             Id = created.Id,
@@ -40,8 +49,9 @@ public class PostsController : ControllerBase
             UserId = created.UserId
         };
 
-        return Created($"/posts/{dto.Id}", dto);
+        return Created($"/Posts/{dto.Id}", dto);
     }
+
 
     [HttpPatch("{id:int}")]
     public async Task<ActionResult<PostUpdateDto>> UpdatePost([FromRoute] int id, [FromBody] PostUpdateDto request)

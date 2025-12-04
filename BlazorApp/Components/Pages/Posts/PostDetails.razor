@@ -1,0 +1,117 @@
+﻿@page "/posts/{id:int}"
+@using ApiContracts
+@inject IPostService PostService
+@inject ICommentService CommentService
+
+<h3>@(post?.Title ?? "Loading...")</h3>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (post is null || comments is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <p>@post.Body</p>
+
+    <h5 class="mt-4">Comments</h5>
+
+    @if (!comments.Any())
+    {
+        <p>No comments yet.</p>
+    }
+    else
+    {
+        <ul class="list-group mb-4">
+            @foreach (var c in comments)
+            {
+                <li class="list-group-item">
+                    @c.Body
+                    <span class="text-muted"> (user @c.UserId)</span>
+                </li>
+            }
+        </ul>
+    }
+
+    <h5>Add comment</h5>
+
+    <div class="mb-2">
+        <label>User Id</label>
+        <input type="number" class="form-control" @bind="newCommentUserId" />
+    </div>
+
+    <div class="mb-2">
+        <label>Text</label>
+        <textarea class="form-control" rows="3" @bind="newCommentBody"></textarea>
+    </div>
+
+    <button class="btn btn-primary"
+            @onclick="AddCommentAsync"
+            disabled="@isAdding || string.IsNullOrWhiteSpace(newCommentBody)">
+        @(isAdding ? "Saving..." : "Add comment")
+    </button>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PostDto? post;
+    private ICollection<CommentDto>? comments;
+    private string? error;
+
+    // поля формы
+    private string newCommentBody = string.Empty;
+    private int newCommentUserId = 1; // можно захардкодить 1 на это задание
+    private bool isAdding;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        error = null;
+        try
+        {
+            post = await PostService.GetByIdAsync(Id);
+            comments = await CommentService.GetByPostIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task AddCommentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newCommentBody)) return;
+
+        isAdding = true;
+        error = null;
+
+        try
+        {
+            var request = new CommentCreateDto
+            {
+                Body = newCommentBody,
+                UserId = newCommentUserId,
+                PostId = Id
+            };
+
+            await CommentService.AddAsync(request);
+
+            // очистить форму
+            newCommentBody = string.Empty;
+
+            // перезагрузить комментарии
+            comments = await CommentService.GetByPostIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isAdding = false;
+        }
+    }
+}

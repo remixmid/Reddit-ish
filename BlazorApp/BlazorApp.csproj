@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ApiContracts\ApiContracts.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Pages\Users\AddUser.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Comments\AddComment.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="Components\Pages\Posts\AddPost.razor" />
+      <AdditionalFiles Include="Components\Pages\Posts\PostDetails.razor" />
+      <AdditionalFiles Include="Components\Pages\Posts\PostList.razor" />
+      <AdditionalFiles Include="Components\Pages\Users\AddUser.razor" />
+    </ItemGroup>
+
+</Project>

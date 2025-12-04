@@ -1,0 +1,49 @@
+﻿@page "/posts/add"
+@inject IPostService PostService
+@inject NavigationManager Nav
+
+<h3>Add Post</h3>
+
+<div class="mb-3">
+    <label class="form-label">Title</label>
+    <input class="form-control" @bind="title" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Body</label>
+    <textarea class="form-control" rows="5" @bind="body"></textarea>
+</div>
+
+<button class="btn btn-success" @onclick="CreateAsync">Save</button>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger mt-3">@error</div>
+}
+
+@code {
+    private string title = "";
+    private string body = "";
+    private string? error;
+
+    private async Task CreateAsync()
+    {
+        try
+        {
+            // пока жёстко шьём userId = 1
+            var dto = new PostCreateDto
+            {
+                Title = title,
+                Body = body,
+                UserId = 1
+            };
+
+            var created = await PostService.CreateAsync(dto);
+            Nav.NavigateTo($"/posts/{created.Id}");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}
