@@ -1,5 +1,4 @@
 ﻿@page "/posts/{id:int}"
-@using ApiContracts
 @inject IPostService PostService
 @inject ICommentService CommentService
 
@@ -62,9 +61,8 @@ else
     private ICollection<CommentDto>? comments;
     private string? error;
 
-    // поля формы
     private string newCommentBody = string.Empty;
-    private int newCommentUserId = 1; // можно захардкодить 1 на это задание
+    private int newCommentUserId = 1; 
     private bool isAdding;
 
     protected override async Task OnParametersSetAsync()
@@ -99,10 +97,8 @@ else
 
             await CommentService.AddAsync(request);
 
-            // очистить форму
             newCommentBody = string.Empty;
 
-            // перезагрузить комментарии
             comments = await CommentService.GetByPostIdAsync(Id);
         }
         catch (Exception ex)

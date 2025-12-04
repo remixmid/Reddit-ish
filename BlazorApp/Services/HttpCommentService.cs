@@ -14,7 +14,6 @@ public class HttpCommentService : ICommentService
 
     public async Task<ICollection<CommentDto>> GetByPostIdAsync(int postId)
     {
-        // ВАЖНО: именно GET и именно такой URL
         HttpResponseMessage response = await client.GetAsync($"Comments/post/{postId}");
         string content = await response.Content.ReadAsStringAsync();
 

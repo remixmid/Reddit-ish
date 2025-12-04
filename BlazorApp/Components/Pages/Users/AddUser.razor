@@ -46,7 +46,6 @@
         try
         {
             var created = await UserService.CreateAsync(model);
-            // после создания юзера идем к постам
             Nav.NavigateTo("/posts");
         }
         catch (Exception ex)
