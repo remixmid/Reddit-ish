@@ -16,15 +16,14 @@ else if (!posts.Any())
 else
 {
     <ul class="list-group">
-        @foreach (var p in posts)
+        @foreach (var post in posts)
         {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>@p.Title</span>
-                <button class="btn btn-sm btn-primary"
-                        @onclick="@(() => Nav.NavigateTo($"/posts/{p.Id}"))">
-                    Open
-                </button>
-            </li>
+            <div>
+                <h4>@post.Title</h4>
+                <p>@post.Body</p>
+                <p><i>Author: @post.UserName (@post.UserId)</i></p>
+                <a href="@($"/posts/{post.Id}")">Open</a>
+            </div>
         }
     </ul>
 }

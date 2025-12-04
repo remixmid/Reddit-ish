@@ -1,4 +1,8 @@
 ﻿@inherits LayoutComponentBase
+@using BlazorApp.Auth
+
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager NavMgr
 
 <div class="page">
     <div class="sidebar">
@@ -6,8 +10,45 @@
     </div>
 
     <main>
+        <div class="top-row px-4">
+            <div class="w-100" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="navbar-brand">Reddit Clone</span>
+
+                <AuthorizeView>
+                    <Authorized>
+                        <span style="margin-right: 8px;">
+                            Hello, @context.User.Identity?.Name
+                        </span>
+
+                        <button @onclick="LogoutAsync">
+                            Logout
+                        </button>
+                    </Authorized>
+
+                    <NotAuthorized>
+                        <button @onclick="GoToLogin">
+                            Login
+                        </button>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+
         <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await ((SimpleAuthProvider)AuthProvider).Logout();
+        NavMgr.NavigateTo("/login", forceLoad: true);
+    }
+
+    private void GoToLogin()
+    {
+        NavMgr.NavigateTo("/login");
+    }
+}

@@ -37,7 +37,8 @@ public class PostsController : ControllerBase
             Id = created.Id,
             Title = created.Title,
             Body = created.Body,
-            UserId = created.UserId
+            UserId = created.UserId,
+            UserName = user.UserName  
         };
 
         return Created($"/Posts/{dto.Id}", dto);
@@ -45,34 +46,53 @@ public class PostsController : ControllerBase
 
 
     [HttpPatch("{id:int}")]
-    public async Task<ActionResult<PostUpdateDto>> UpdatePost([FromRoute] int id, [FromBody] PostUpdateDto request)
+    public async Task<ActionResult> UpdatePost(
+        [FromRoute] int id,
+        [FromBody] PostUpdateDto request,
+        [FromQuery] int userId)
     {
         Post? existing = await postRepository.GetSingleAsync(id);
 
         if (existing == null)
             return NotFound();
+
+        if (existing.UserId != userId)
+            return Forbid("You can edit only your own posts.");
+
         if (!string.IsNullOrWhiteSpace(request.Title))
-        {
             existing.Title = request.Title;
+
+        if (!string.IsNullOrWhiteSpace(request.Body))
             existing.Body = request.Body;
-        }
 
         await postRepository.UpdateAsync(existing);
 
         return NoContent();
     }
 
+
+    [HttpGet]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PostDto>>> GetMany()
     {
         var posts = await postRepository.GetManyAsync().ToListAsync();
 
-        var dtos = posts.Select(p => new PostDto
+        var userIds = posts.Select(p => p.UserId).Distinct().ToList();
+        var users = await userRepository.GetManyAsync()
+            .Where(u => userIds.Contains(u.Id))
+            .ToListAsync();
+
+        var dtos = posts.Select(p =>
         {
-            Id = p.Id,
-            Title = p.Title,
-            Body = p.Body,
-            UserId = p.UserId
+            var user = users.SingleOrDefault(u => u.Id == p.UserId);
+            return new PostDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Body = p.Body,
+                UserId = p.UserId,
+                UserName = user?.UserName
+            };
         });
 
         return Ok(dtos);
@@ -84,15 +104,29 @@ public class PostsController : ControllerBase
         Post? post = await postRepository.GetSingleAsync(id);
         if (post == null)
             return NotFound();
-        return Ok(new PostDto { Id = post.Id, Title = post.Title, Body = post.Body, UserId = post.UserId });
+
+        var user = await userRepository.GetSingleAsync(post.UserId);
+
+        return Ok(new PostDto
+        {
+            Id = post.Id,
+            Title = post.Title,
+            Body = post.Body,
+            UserId = post.UserId,
+            UserName = user?.UserName
+        });
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult> DeletePost([FromRoute] int id)
+    public async Task<ActionResult> DeletePost([FromRoute] int id, [FromQuery] int userId)
     {
         Post? post = await postRepository.GetSingleAsync(id);
         if (post == null)
             return NotFound();
+
+        if (post.UserId != userId)
+            return Forbid("You can delete only your own posts.");
+
         await postRepository.DeleteAsync(id);
         return NoContent();
     }

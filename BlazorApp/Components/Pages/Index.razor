@@ -1,18 +1,29 @@
 ﻿@page "/"
 @inject NavigationManager NavMgr
-<PageTitle>Home</PageTitle>
 
-<h1>Reddit Clone</h1>
+<h3>Welcome to Reddit Clone</h3>
 
 <AuthorizeView>
     <Authorized>
-        <h3>Hello, @context.User.Identity?.Name</h3>
+        <p>
+            Use the menu on the left to create users, browse posts, and add new posts or comments.
+        </p>
     </Authorized>
+
     <NotAuthorized>
-        You are not logged in!
+        <p>
+            You need to log in to browse and create posts.
+        </p>
+
+        <button @onclick="GoToLogin">
+            go to login
+        </button>
     </NotAuthorized>
 </AuthorizeView>
 
-<p>Here you can browse interesting posts.</p>
-
-<button @onclick='() => NavMgr.NavigateTo("login")'>go to login</button>
+@code {
+    private void GoToLogin()
+    {
+        NavMgr.NavigateTo("/login");
+    }
+}

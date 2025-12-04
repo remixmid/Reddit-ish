@@ -34,4 +34,27 @@ public class HttpCommentService : ICommentService
         return JsonSerializer.Deserialize<CommentDto>(content,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
     }
+    
+    public async Task DeleteAsync(int commentId, int userId)
+    {
+        var response = await client.DeleteAsync($"comments/{commentId}?userId={userId}");
+        var content = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+            throw new Exception(content);
+    }
+    
+    public async Task UpdateAsync(int commentId, CommentUpdateDto dto, int userId)
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Patch,
+            $"comments/{commentId}?userId={userId}")
+        {
+            Content = JsonContent.Create(dto)
+        };
+
+        var response = await client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+            throw new Exception(content);
+    }
 }

@@ -87,7 +87,12 @@ public class SimpleAuthProvider : AuthenticationStateProvider
 
     public async Task Logout()
     {
-        await _jsRuntime.InvokeVoidAsync("sessionStorage.setItem", "currentUser", ""); 
-        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(new())));
+        await _jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", "currentUser");
+
+        var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
+        NotifyAuthenticationStateChanged(
+            Task.FromResult(new AuthenticationState(anonymous))
+        );
     }
+
 }

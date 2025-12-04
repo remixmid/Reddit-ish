@@ -1,45 +1,68 @@
 ﻿@page "/posts/add"
+@using System.Security.Claims
 @attribute [Authorize]
+
 @inject IPostService PostService
-@inject NavigationManager Nav
+@inject NavigationManager NavMgr
+@inject AuthenticationStateProvider AuthProvider
 
 <h3>Add Post</h3>
 
-<div class="mb-3">
-    <label class="form-label">Title</label>
-    <input class="form-control" @bind="title" />
+<div>
+    <label>Title</label>
+    <input @bind="title" />
 </div>
 
-<div class="mb-3">
-    <label class="form-label">Body</label>
-    <textarea class="form-control" rows="5" @bind="body"></textarea>
+<div>
+    <label>Body</label>
+    <textarea @bind="body"></textarea>
 </div>
-
-<button class="btn btn-success" @onclick="CreateAsync">Save</button>
 
 @if (!string.IsNullOrEmpty(error))
 {
-    <div class="alert alert-danger mt-3">@error</div>
+    <p style="color:red">@error</p>
 }
 
+<button @onclick="CreatePostAsync">Create</button>
+
 @code {
-    private string title = "";
-    private string body = "";
+    private string title = string.Empty;
+    private string body = string.Empty;
     private string? error;
 
-    private async Task CreateAsync()
+    private async Task CreatePostAsync()
     {
+        error = null;
+
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            error = "You must be logged in to create posts.";
+            return;
+        }
+
+        var idClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+        if (idClaim is null)
+        {
+            error = "No user id in claims.";
+            return;
+        }
+
+        int userId = int.Parse(idClaim.Value);
+
+        var dto = new PostCreateDto
+        {
+            Title = title,
+            Body = body,
+            UserId = userId
+        };
+
         try
         {
-            var dto = new PostCreateDto
-            {
-                Title = title,
-                Body = body,
-                UserId = 1
-            };
-
-            var created = await PostService.CreateAsync(dto);
-            Nav.NavigateTo($"/posts/{created.Id}");
+            await PostService.CreateAsync(dto);
+            NavMgr.NavigateTo("/posts");
         }
         catch (Exception ex)
         {

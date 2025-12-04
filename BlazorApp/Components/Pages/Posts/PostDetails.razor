@@ -1,7 +1,11 @@
 ﻿@page "/posts/{id:int}"
 @attribute [Authorize]
+@using System.Security.Claims
+
 @inject IPostService PostService
 @inject ICommentService CommentService
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager NavMgr
 
 <h3>@(post?.Title ?? "Loading...")</h3>
 
@@ -15,7 +19,49 @@ else if (post is null || comments is null)
 }
 else
 {
-    <p>@post.Body</p>
+    <p><i>Author: @post.UserName (@post.UserId)</i></p>
+
+    @if (isEditingPost)
+    {
+        <div class="mb-2">
+            <label>Title</label>
+            <input class="form-control" @bind="editPostTitle" />
+        </div>
+        <div class="mb-2">
+            <label>Body</label>
+            <textarea class="form-control" rows="4" @bind="editPostBody"></textarea>
+        </div>
+    }
+    else
+    {
+        <p>@post.Body</p>
+    }
+
+    @if (currentUserId.HasValue && post.UserId == currentUserId.Value)
+    {
+        <div class="mb-3">
+            <button class="btn btn-outline-primary me-2"
+                    @onclick="ToggleEditPost"
+                    disabled="@isSavingPost">
+                @(isEditingPost ? "Cancel edit" : "Edit post")
+            </button>
+
+            @if (isEditingPost)
+            {
+                <button class="btn btn-primary me-2"
+                        @onclick="SavePostAsync"
+                        disabled="@isSavingPost">
+                    @(isSavingPost ? "Saving..." : "Save")
+                </button>
+            }
+
+            <button class="btn btn-danger"
+                    @onclick="DeletePostAsync"
+                    disabled="@isDeletingPost">
+                @(isDeletingPost ? "Deleting..." : "Delete post")
+            </button>
+        </div>
+    }
 
     <h5 class="mt-4">Comments</h5>
 
@@ -29,8 +75,42 @@ else
             @foreach (var c in comments)
             {
                 <li class="list-group-item">
-                    @c.Body
-                    <span class="text-muted"> (user @c.UserId)</span>
+                    @if (editingCommentId == c.Id)
+                    {
+                        <textarea class="form-control mb-2" rows="2" @bind="editCommentBody"></textarea>
+
+                        <button class="btn btn-sm btn-success me-2"
+                                @onclick="() => SaveCommentAsync(c.Id)"
+                                disabled="@isSavingComment">
+                            @(isSavingComment ? "Saving..." : "Save")
+                        </button>
+
+                        <button class="btn btn-sm btn-secondary"
+                                @onclick="CancelEditComment">
+                            Cancel
+                        </button>
+                    }
+                    else
+                    {
+                        <span>
+                            @c.Body
+                            <span class="text-muted"> (user @c.UserId)</span>
+                        </span>
+
+                        @if (currentUserId.HasValue && c.UserId == currentUserId.Value)
+                        {
+                            <button class="btn btn-sm btn-outline-primary ms-2"
+                                    @onclick="() => StartEditComment(c)">
+                                Edit
+                            </button>
+
+                            <button class="btn btn-sm btn-outline-danger ms-2"
+                                    @onclick="() => DeleteCommentAsync(c.Id)"
+                                    disabled="@isDeletingComment">
+                                Delete
+                            </button>
+                        }
+                    }
                 </li>
             }
         </ul>
@@ -39,18 +119,13 @@ else
     <h5>Add comment</h5>
 
     <div class="mb-2">
-        <label>User Id</label>
-        <input type="number" class="form-control" @bind="newCommentUserId" />
-    </div>
-
-    <div class="mb-2">
         <label>Text</label>
         <textarea class="form-control" rows="3" @bind="newCommentBody"></textarea>
     </div>
 
     <button class="btn btn-primary"
             @onclick="AddCommentAsync"
-            disabled="@isAdding || string.IsNullOrWhiteSpace(newCommentBody)">
+            disabled="@isAdding">
         @(isAdding ? "Saving..." : "Add comment")
     </button>
 }
@@ -62,17 +137,44 @@ else
     private ICollection<CommentDto>? comments;
     private string? error;
 
+    private int? currentUserId;
+
     private string newCommentBody = string.Empty;
-    private int newCommentUserId = 1; 
     private bool isAdding;
+
+    private bool isDeletingPost;
+    private bool isDeletingComment;
+
+    // редактирование поста
+    private bool isEditingPost;
+    private bool isSavingPost;
+    private string editPostTitle = string.Empty;
+    private string editPostBody = string.Empty;
+
+    // редактирование комментария
+    private int? editingCommentId;
+    private bool isSavingComment;
+    private string editCommentBody = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
         error = null;
+
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var idClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+        currentUserId = idClaim != null ? int.Parse(idClaim.Value) : null;
+
         try
         {
             post = await PostService.GetByIdAsync(Id);
             comments = await CommentService.GetByPostIdAsync(Id);
+
+            if (post is not null)
+            {
+                editPostTitle = post.Title;
+                editPostBody = post.Body;
+            }
         }
         catch (Exception ex)
         {
@@ -82,7 +184,17 @@ else
 
     private async Task AddCommentAsync()
     {
-        if (string.IsNullOrWhiteSpace(newCommentBody)) return;
+        if (string.IsNullOrWhiteSpace(newCommentBody))
+        {
+            error = "Comment text cannot be empty.";
+            return;
+        }
+
+        if (!currentUserId.HasValue)
+        {
+            error = "You must be logged in to add comments.";
+            return;
+        }
 
         isAdding = true;
         error = null;
@@ -92,14 +204,13 @@ else
             var request = new CommentCreateDto
             {
                 Body = newCommentBody,
-                UserId = newCommentUserId,
+                UserId = currentUserId.Value,
                 PostId = Id
             };
 
             await CommentService.AddAsync(request);
 
             newCommentBody = string.Empty;
-
             comments = await CommentService.GetByPostIdAsync(Id);
         }
         catch (Exception ex)
@@ -109,6 +220,151 @@ else
         finally
         {
             isAdding = false;
+        }
+    }
+
+    private async Task DeletePostAsync()
+    {
+        if (!currentUserId.HasValue || post is null)
+            return;
+
+        isDeletingPost = true;
+        error = null;
+
+        try
+        {
+            await PostService.DeleteAsync(post.Id, currentUserId.Value);
+            NavMgr.NavigateTo("/posts");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isDeletingPost = false;
+        }
+    }
+
+    private async Task DeleteCommentAsync(int commentId)
+    {
+        if (!currentUserId.HasValue)
+            return;
+
+        isDeletingComment = true;
+        error = null;
+
+        try
+        {
+            await CommentService.DeleteAsync(commentId, currentUserId.Value);
+            comments = await CommentService.GetByPostIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isDeletingComment = false;
+        }
+    }
+
+    private void ToggleEditPost()
+    {
+        if (!isEditingPost && post is not null)
+        {
+            editPostTitle = post.Title;
+            editPostBody = post.Body;
+        }
+
+        isEditingPost = !isEditingPost;
+    }
+
+    private async Task SavePostAsync()
+    {
+        if (!currentUserId.HasValue || post is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(editPostTitle) ||
+            string.IsNullOrWhiteSpace(editPostBody))
+        {
+            error = "Title and body cannot be empty.";
+            return;
+        }
+
+        isSavingPost = true;
+        error = null;
+
+        try
+        {
+            var dto = new PostUpdateDto
+            {
+                Title = editPostTitle,
+                Body = editPostBody
+            };
+
+            await PostService.UpdateAsync(post.Id, dto, currentUserId.Value);
+
+            post.Title = editPostTitle;
+            post.Body = editPostBody;
+            isEditingPost = false;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isSavingPost = false;
+        }
+    }
+
+    private void StartEditComment(CommentDto c)
+    {
+        editingCommentId = c.Id;
+        editCommentBody = c.Body;
+    }
+
+    private void CancelEditComment()
+    {
+        editingCommentId = null;
+        editCommentBody = string.Empty;
+    }
+
+    private async Task SaveCommentAsync(int commentId)
+    {
+        if (!currentUserId.HasValue || editingCommentId != commentId)
+            return;
+
+        if (string.IsNullOrWhiteSpace(editCommentBody))
+        {
+            error = "Comment text cannot be empty.";
+            return;
+        }
+
+        isSavingComment = true;
+        error = null;
+
+        try
+        {
+            var dto = new CommentUpdateDto
+            {
+                Body = editCommentBody
+            };
+
+            await CommentService.UpdateAsync(commentId, dto, currentUserId.Value);
+
+            editingCommentId = null;
+            editCommentBody = string.Empty;
+            comments = await CommentService.GetByPostIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isSavingComment = false;
         }
     }
 }

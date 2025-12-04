@@ -41,4 +41,27 @@ public class HttpPostService : IPostService
 
         return created!;
     }
+    
+    public async Task DeleteAsync(int postId, int userId)
+    {
+        var response = await client.DeleteAsync($"posts/{postId}?userId={userId}");
+        var content = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+            throw new Exception(content);
+    }
+    
+    public async Task UpdateAsync(int postId, PostUpdateDto dto, int userId)
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Patch,
+            $"posts/{postId}?userId={userId}")
+        {
+            Content = JsonContent.Create(dto)
+        };
+
+        var response = await client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+            throw new Exception(content);
+    }
 }
